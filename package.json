@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "node scripts/prepare-schema.mjs && prisma generate --schema=prisma/schema-build.prisma",
+    "db:push": "node scripts/prepare-schema.mjs && prisma db push --schema=prisma/schema-build.prisma",
+    "db:migrate": "node scripts/prepare-schema.mjs && prisma migrate deploy --schema=prisma/schema-build.prisma",
+    "db:seed": "curl -s -X POST $NEXTAUTH_URL/api/seed -H 'x-seed-secret: $SEED_SECRET'"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -37,7 +41,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

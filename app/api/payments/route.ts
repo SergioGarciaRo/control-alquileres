@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { resolvePaymentStatus, validatePaymentFields } from '@/lib/payment-status'
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,51 +44,70 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
+    // Validate required fields
+    const validationError = validatePaymentFields(data)
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 })
+    if (!data.propertyId) return NextResponse.json({ error: 'Propiedad requerida' }, { status: 400 })
+    if (!data.dueDate) return NextResponse.json({ error: 'Fecha de vencimiento requerida' }, { status: 400 })
+
     const property = await prisma.property.findFirst({
       where: { id: data.propertyId, userId: session.user.id },
       include: { tenants: { where: { status: 'ACTIVE' } } },
     })
     if (!property) return NextResponse.json({ error: 'Propiedad no encontrada' }, { status: 404 })
 
+    // Check for duplicate payment in same month/year
+    const existing = await prisma.payment.findFirst({
+      where: { propertyId: data.propertyId, month: parseInt(data.month), year: parseInt(data.year) },
+    })
+    if (existing) {
+      return NextResponse.json(
+        { error: `Ya existe un pago para ${data.month}/${data.year} en esta propiedad` },
+        { status: 409 }
+      )
+    }
+
     const expectedAmount = parseFloat(data.expectedAmount)
     const paidAmount = parseFloat(data.paidAmount) || 0
     const dueDate = new Date(data.dueDate)
+    const status = resolvePaymentStatus(paidAmount, expectedAmount, dueDate)
 
-    let status = 'PENDING'
-    if (paidAmount >= expectedAmount) status = 'PAID'
-    else if (paidAmount > 0 && paidAmount < expectedAmount) status = 'PARTIAL'
-    else if (paidAmount === 0 && new Date() > dueDate) status = 'UNPAID'
+    // Use a transaction so Payment + TenantPayments are atomic
+    const payment = await prisma.$transaction(async (tx) => {
+      const pay = await tx.payment.create({
+        data: {
+          propertyId: data.propertyId,
+          month: parseInt(data.month),
+          year: parseInt(data.year),
+          expectedAmount,
+          paidAmount,
+          dueDate,
+          paidDate: data.paidDate ? new Date(data.paidDate) : null,
+          status,
+          method: data.method || null,
+          notes: data.notes || null,
+        },
+      })
 
-    const payment = await prisma.payment.create({
-      data: {
-        propertyId: data.propertyId,
-        month: parseInt(data.month),
-        year: parseInt(data.year),
-        expectedAmount,
-        paidAmount,
-        dueDate,
-        paidDate: data.paidDate ? new Date(data.paidDate) : null,
-        status,
-        method: data.method || null,
-        notes: data.notes || null,
-      },
-    })
-
-    // Create individual tenant payments if there are multiple tenants
-    if (property.tenants.length > 0 && data.tenantPayments) {
-      for (const tp of data.tenantPayments) {
-        await prisma.tenantPayment.create({
-          data: {
-            paymentId: payment.id,
+      if (property.tenants.length > 0 && data.tenantPayments?.length) {
+        await tx.tenantPayment.createMany({
+          data: data.tenantPayments.map((tp: any) => ({
+            paymentId: pay.id,
             tenantId: tp.tenantId,
             expectedAmount: parseFloat(tp.expectedAmount),
             paidAmount: parseFloat(tp.paidAmount) || 0,
-            status: tp.status || 'PENDING',
+            status: resolvePaymentStatus(
+              parseFloat(tp.paidAmount) || 0,
+              parseFloat(tp.expectedAmount),
+              dueDate,
+            ),
             paidDate: tp.paidDate ? new Date(tp.paidDate) : null,
-          },
+          })),
         })
       }
-    }
+
+      return pay
+    })
 
     return NextResponse.json(payment, { status: 201 })
   } catch (error) {

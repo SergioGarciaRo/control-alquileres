@@ -162,7 +162,7 @@ export function DocumentsPage({ initialDocuments, properties }: Props) {
             <Card key={doc.id} className="hover:shadow-md transition-all group">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5 text-gray-500" />
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

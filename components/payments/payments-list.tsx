@@ -4,10 +4,13 @@ import { useState, useMemo } from 'react'
 import { CreditCard, Plus, CheckCircle, XCircle, Clock, AlertTriangle, Filter } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
-  formatCurrency, formatDate, getPaymentStatusColor, getPaymentStatusLabel
+  formatCurrency, formatDate, formatMonth, getPaymentStatusColor, getPaymentStatusLabel
 } from '@/lib/utils'
 import { PaymentFormDialog } from './payment-form-dialog'
+import { ReceiptButton } from './receipt-button'
+import { PAYMENT_METHOD } from '@/lib/status-config'
 
 interface Payment {
   id: string
@@ -20,6 +23,8 @@ interface Payment {
   status: string
   method: string | null
   notes: string | null
+  receiptUrl: string | null
+  receiptName: string | null
   property: { id: string; name: string }
   tenantPayments: any[]
 }
@@ -36,6 +41,7 @@ export function PaymentsList({ initialPayments, properties }: Props) {
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [filterMonth, setFilterMonth] = useState('')
   const [filterProperty, setFilterProperty] = useState('ALL')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const now = new Date()
   const currentMonth = now.getMonth() + 1
@@ -68,16 +74,17 @@ export function PaymentsList({ initialPayments, properties }: Props) {
     if (editingPayment) {
       setPayments(prev => prev.map(p => p.id === payment.id ? { ...p, ...payment } : p))
     } else {
-      setPayments(prev => [{ ...payment, tenantPayments: [] }, ...prev])
+      setPayments(prev => [{ ...payment, tenantPayments: [], receiptUrl: null, receiptName: null }, ...prev])
     }
     setShowForm(false)
     setEditingPayment(null)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este pago?')) return
-    const res = await fetch(`/api/payments/${id}`, { method: 'DELETE' })
-    if (res.ok) setPayments(prev => prev.filter(p => p.id !== id))
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return
+    const res = await fetch(`/api/payments/${confirmDeleteId}`, { method: 'DELETE' })
+    if (res.ok) setPayments(prev => prev.filter(p => p.id !== confirmDeleteId))
+    setConfirmDeleteId(null)
   }
 
   const statusFilters = [
@@ -196,6 +203,7 @@ export function PaymentsList({ initialPayments, properties }: Props) {
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Pagado</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha pago</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Método</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase" title="Justificante adjunto">Just.</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
@@ -210,8 +218,8 @@ export function PaymentsList({ initialPayments, properties }: Props) {
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-medium">
-                    {payment.month.toString().padStart(2, '0')}/{payment.year}
+                  <td className="px-4 py-3 font-medium capitalize">
+                    {formatMonth(payment.month, payment.year)}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{payment.property.name}</td>
                   <td className="px-4 py-3 text-right font-medium">{formatCurrency(payment.expectedAmount)}</td>
@@ -224,7 +232,21 @@ export function PaymentsList({ initialPayments, properties }: Props) {
                   <td className="px-4 py-3 text-gray-500 text-xs">
                     {payment.paidDate ? formatDate(payment.paidDate) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{payment.method || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">
+                    {payment.method ? (PAYMENT_METHOD[payment.method] ?? payment.method) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <ReceiptButton
+                      paymentId={payment.id}
+                      receiptUrl={payment.receiptUrl}
+                      receiptName={payment.receiptName}
+                      onUpdated={(url, name) =>
+                        setPayments(prev => prev.map(p =>
+                          p.id === payment.id ? { ...p, receiptUrl: url, receiptName: name } : p
+                        ))
+                      }
+                    />
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" className="h-7 text-xs"
@@ -232,7 +254,7 @@ export function PaymentsList({ initialPayments, properties }: Props) {
                         Editar
                       </Button>
                       <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400"
-                        onClick={() => handleDelete(payment.id)}>
+                        onClick={() => setConfirmDeleteId(payment.id)}>
                         Eliminar
                       </Button>
                     </div>
@@ -250,6 +272,15 @@ export function PaymentsList({ initialPayments, properties }: Props) {
         onSaved={handleSaved}
         payment={editingPayment}
         properties={properties}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Eliminar pago"
+        description="Esta acción eliminará el pago permanentemente. Los datos de inquilinos asociados también se borrarán."
+        confirmLabel="Eliminar pago"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteId(null)}
       />
     </div>
   )

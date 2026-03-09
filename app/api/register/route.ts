@@ -10,7 +10,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email y contraseña son requeridos' }, { status: 400 })
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } })
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: 'Formato de email inválido' }, { status: 400 })
+    }
+
+    if (password.length < 8) {
+      return NextResponse.json({ error: 'La contraseña debe tener al menos 8 caracteres' }, { status: 400 })
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } })
     if (existingUser) {
       return NextResponse.json({ error: 'El email ya está registrado' }, { status: 409 })
     }
@@ -18,7 +27,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: { name: name?.trim() || null, email: email.toLowerCase().trim(), password: hashedPassword },
     })
 
     return NextResponse.json({ id: user.id, email: user.email, name: user.name }, { status: 201 })

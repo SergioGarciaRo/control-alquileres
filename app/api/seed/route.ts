@@ -1,8 +1,16 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // Block in production unless a valid SEED_SECRET header is provided
+  if (process.env.NODE_ENV === 'production') {
+    const secret = request.headers.get('x-seed-secret')
+    if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
+      return NextResponse.json({ error: 'No disponible en producción' }, { status: 403 })
+    }
+  }
+
   try {
     // Clear existing data
     await prisma.document.deleteMany()

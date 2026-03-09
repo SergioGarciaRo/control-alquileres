@@ -1,14 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Users, Plus, Phone, Mail, Calendar, AlertTriangle, CheckCircle, Building2 } from 'lucide-react'
+import { Users, Plus, Phone, Mail, Calendar, AlertTriangle, CheckCircle, Building2, Eye } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
 import {
   formatCurrency, formatDate, getTenantStatusColor, getTenantStatusLabel
 } from '@/lib/utils'
 import { TenantFormDialog } from './tenant-form-dialog'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Tenant {
   id: string
@@ -36,6 +38,7 @@ export function TenantsList({ initialTenants, properties }: Props) {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [filter, setFilter] = useState('ALL')
   const [search, setSearch] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const filtered = tenants
     .filter(t => filter === 'ALL' || t.status === filter)
@@ -45,10 +48,11 @@ export function TenantsList({ initialTenants, properties }: Props) {
       t.property.name.toLowerCase().includes(search.toLowerCase())
     )
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este inquilino?')) return
-    const res = await fetch(`/api/tenants/${id}`, { method: 'DELETE' })
-    if (res.ok) setTenants(prev => prev.filter(t => t.id !== id))
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return
+    const res = await fetch(`/api/tenants/${confirmDeleteId}`, { method: 'DELETE' })
+    if (res.ok) setTenants(prev => prev.filter(t => t.id !== confirmDeleteId))
+    setConfirmDeleteId(null)
   }
 
   const handleSaved = (tenant: any) => {
@@ -138,14 +142,16 @@ export function TenantsList({ initialTenants, properties }: Props) {
                 <CardContent className="p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
                       {tenant.name.charAt(0).toUpperCase()}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-gray-900">{tenant.name}</h3>
+                        <Link href={`/inquilinos/${tenant.id}`}>
+                          <h3 className="font-semibold text-gray-900 hover:text-blue-600 cursor-pointer">{tenant.name}</h3>
+                        </Link>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${getTenantStatusColor(tenant.status)}`}>
                           {getTenantStatusLabel(tenant.status)}
                         </span>
@@ -196,11 +202,17 @@ export function TenantsList({ initialTenants, properties }: Props) {
                         <p className="text-xs text-gray-400">Fianza: {formatCurrency(depositAmount)}</p>
                       )}
                       <div className="flex gap-1">
+                        <Link href={`/inquilinos/${tenant.id}`}>
+                          <Button size="sm" variant="ghost" className="gap-1">
+                            <Eye className="w-3.5 h-3.5" />
+                            Ver
+                          </Button>
+                        </Link>
                         <Button size="sm" variant="outline" onClick={() => { setEditingTenant(tenant); setShowForm(true) }}>
                           Editar
                         </Button>
                         <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-600"
-                          onClick={() => handleDelete(tenant.id)}>
+                          onClick={() => setConfirmDeleteId(tenant.id)}>
                           Eliminar
                         </Button>
                       </div>
@@ -225,6 +237,15 @@ export function TenantsList({ initialTenants, properties }: Props) {
         onSaved={handleSaved}
         tenant={editingTenant}
         properties={properties}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Eliminar inquilino"
+        description="Se eliminarán permanentemente el inquilino y todos sus pagos y fianzas asociados. Esta acción no se puede deshacer."
+        confirmLabel="Eliminar inquilino"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteId(null)}
       />
     </div>
   )

@@ -39,6 +39,12 @@ yarn-error.log*
 prisma/dev.db
 prisma/dev.db-journal
 
+# Prisma generated build schema (patched with literal provider)
+prisma/schema-build.prisma
+
+# Upload files (local dev)
+public/receipts/
+
 # Scripts
 scripts/
 
@@ -48,3 +54,5 @@ scripts/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel

@@ -142,7 +142,7 @@ export default async function HistoricoPage() {
                               {tenant.email && <span>✉️ {tenant.email}</span>}
                             </div>
                           </div>
-                          <div className="text-right text-sm flex-shrink-0">
+                          <div className="text-right text-sm shrink-0">
                             <p className="font-bold">{formatCurrency(tenant.rent)}/mes</p>
                             {deposit && (
                               <p className="text-xs text-gray-400">

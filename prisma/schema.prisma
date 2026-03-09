@@ -36,6 +36,7 @@ model Property {
   status         String     @default("AVAILABLE")
   expectedRent   Float      @default(0)
   fixedExpenses  Float      @default(0)
+  purchasePrice  Float?
   notes          String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
@@ -46,6 +47,8 @@ model Property {
   deposits       Deposit[]
   incidents      Incident[]
   documents      Document[]
+
+  @@index([userId])
 }
 
 model Tenant {
@@ -54,6 +57,7 @@ model Tenant {
   name           String
   phone          String?
   email          String?
+  dni            String?
   startDate      DateTime
   endDate        DateTime?
   rent           Float
@@ -66,6 +70,8 @@ model Tenant {
   deposits       Deposit[]
   incidents      Incident[]
   documents      Document[]
+
+  @@index([propertyId, status])
 }
 
 model Payment {
@@ -80,10 +86,16 @@ model Payment {
   status         String          @default("PENDING")
   method         String?
   notes          String?
+  receiptUrl     String?
+  receiptName    String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   property       Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenantPayments TenantPayment[]
+
+  @@unique([propertyId, month, year])
+  @@index([propertyId, year, month])
+  @@index([status])
 }
 
 model TenantPayment {
@@ -111,6 +123,8 @@ model Expense {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, date])
 }
 
 model Deposit {
@@ -146,6 +160,8 @@ model Incident {
   property     Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenant       Tenant?    @relation(fields: [tenantId], references: [id])
   documents    Document[]
+
+  @@index([propertyId, status])
 }
 
 model Document {

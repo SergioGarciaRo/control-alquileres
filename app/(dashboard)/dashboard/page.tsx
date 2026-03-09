@@ -18,15 +18,60 @@ async function getDashboardData(userId: string) {
   const monthStart = new Date(currentYear, currentMonth - 1, 1)
   const monthEnd = new Date(currentYear, currentMonth, 1)
 
-  const properties = await prisma.property.findMany({
-    where: { userId },
-    include: {
-      tenants: true,
-      payments: { where: { month: currentMonth, year: currentYear } },
-      expenses: { where: { date: { gte: monthStart, lt: monthEnd } } },
-      incidents: { where: { status: { in: ['OPEN', 'IN_PROGRESS'] } } },
-    },
+  // Build the list of last-6-month buckets for the trend
+  const trendMonths = Array.from({ length: 6 }, (_, i) => {
+    const offset = 5 - i
+    const m = currentMonth - offset <= 0 ? currentMonth - offset + 12 : currentMonth - offset
+    const y = currentMonth - offset <= 0 ? currentYear - 1 : currentYear
+    return { m, y }
   })
+  const trendStart = new Date(trendMonths[0].y, trendMonths[0].m - 1, 1)
+
+  // All queries run in parallel — no sequential N+1 loops
+  const [properties, overduePayments, openIncidents, trendPayments, trendExpenses] = await Promise.all([
+    prisma.property.findMany({
+      where: { userId },
+      include: {
+        tenants: true,
+        payments: { where: { month: currentMonth, year: currentYear } },
+        expenses: { where: { date: { gte: monthStart, lt: monthEnd } } },
+        incidents: { where: { status: { in: ['OPEN', 'IN_PROGRESS'] } } },
+      },
+    }),
+    prisma.payment.findMany({
+      where: {
+        property: { userId },
+        status: { in: ['PENDING', 'PARTIAL', 'UNPAID'] },
+        dueDate: { lt: now },
+      },
+      include: { property: { select: { name: true } } },
+      orderBy: { dueDate: 'asc' },
+      take: 8,
+    }),
+    prisma.incident.findMany({
+      where: {
+        property: { userId },
+        status: { in: ['OPEN', 'IN_PROGRESS'] },
+      },
+      include: { property: { select: { name: true } } },
+      orderBy: { priority: 'desc' },
+      take: 5,
+    }),
+    prisma.payment.findMany({
+      where: {
+        property: { userId },
+        OR: trendMonths.map(({ m, y }) => ({ month: m, year: y })),
+      },
+      select: { month: true, year: true, paidAmount: true, expectedAmount: true },
+    }),
+    prisma.expense.findMany({
+      where: {
+        property: { userId },
+        date: { gte: trendStart, lt: monthEnd },
+      },
+      select: { date: true, amount: true },
+    }),
+  ])
 
   const totalProperties = properties.length
   const occupiedProperties = properties.filter(p => p.status === 'OCCUPIED').length
@@ -35,12 +80,15 @@ async function getDashboardData(userId: string) {
   let monthlyIncome = 0
   let monthlyExpenses = 0
   let totalDebt = 0
+  let totalExpected = 0
 
   const propertyStats = properties.map(p => {
     const income = p.payments.reduce((s, pay) => s + pay.paidAmount, 0)
     const expenses = p.expenses.reduce((s, exp) => s + exp.amount, 0)
+    const expected = p.payments.reduce((s, pay) => s + pay.expectedAmount, 0)
     monthlyIncome += income
     monthlyExpenses += expenses
+    totalExpected += expected
 
     const debt = p.payments.reduce((s, pay) => {
       if (pay.status === 'UNPAID') return s + pay.expectedAmount
@@ -50,6 +98,7 @@ async function getDashboardData(userId: string) {
     totalDebt += debt
 
     const netProfit = income - expenses
+    // Rentability: monthly net profit as % of expected monthly rent
     const rentability = p.expectedRent > 0 ? (netProfit / p.expectedRent) * 100 : 0
 
     return {
@@ -66,50 +115,31 @@ async function getDashboardData(userId: string) {
     }
   }).sort((a, b) => b.rentability - a.rentability)
 
-  const overduePayments = await prisma.payment.findMany({
-    where: {
-      property: { userId },
-      status: { in: ['PENDING', 'PARTIAL', 'UNPAID'] },
-      dueDate: { lt: now },
-    },
-    include: { property: { select: { name: true } } },
-    orderBy: { dueDate: 'asc' },
-    take: 8,
-  })
-
-  const openIncidents = await prisma.incident.findMany({
-    where: {
-      property: { userId },
-      status: { in: ['OPEN', 'IN_PROGRESS'] },
-    },
-    include: { property: { select: { name: true } } },
-    orderBy: { priority: 'desc' },
-    take: 5,
-  })
-
-  // Monthly trend (last 6 months)
-  const monthlyTrend = []
-  for (let i = 5; i >= 0; i--) {
-    const m = currentMonth - i <= 0 ? currentMonth - i + 12 : currentMonth - i
-    const y = currentMonth - i <= 0 ? currentYear - 1 : currentYear
-    const monthPayments = await prisma.payment.aggregate({
-      where: { property: { userId }, month: m, year: y },
-      _sum: { paidAmount: true, expectedAmount: true },
-    })
-    const monthExpenses = await prisma.expense.aggregate({
-      where: {
-        property: { userId },
-        date: { gte: new Date(y, m - 1, 1), lt: new Date(y, m, 1) },
-      },
-      _sum: { amount: true },
-    })
-    monthlyTrend.push({
+  // Build monthly trend from pre-fetched data (no extra queries)
+  const monthlyTrend = trendMonths.map(({ m, y }) => {
+    const income = trendPayments
+      .filter(p => p.month === m && p.year === y)
+      .reduce((s, p) => s + p.paidAmount, 0)
+    const expected = trendPayments
+      .filter(p => p.month === m && p.year === y)
+      .reduce((s, p) => s + p.expectedAmount, 0)
+    const expenses = trendExpenses
+      .filter(e => {
+        const d = new Date(e.date)
+        return d.getMonth() + 1 === m && d.getFullYear() === y
+      })
+      .reduce((s, e) => s + e.amount, 0)
+    return {
       month: `${m.toString().padStart(2, '0')}/${y}`,
-      income: monthPayments._sum.paidAmount || 0,
-      expenses: monthExpenses._sum.amount || 0,
-      expected: monthPayments._sum.expectedAmount || 0,
-    })
-  }
+      income,
+      expenses,
+      expected,
+    }
+  })
+
+  const collectionRate = totalExpected > 0
+    ? Math.round((monthlyIncome / totalExpected) * 100)
+    : 0
 
   return {
     totalProperties,
@@ -123,9 +153,7 @@ async function getDashboardData(userId: string) {
     openIncidents,
     propertyStats,
     monthlyTrend,
-    collectionRate: properties.reduce((s, p) => s + p.payments.reduce((ss, pay) => ss + pay.expectedAmount, 0), 0) > 0
-      ? Math.round((monthlyIncome / properties.reduce((s, p) => s + p.payments.reduce((ss, pay) => ss + pay.expectedAmount, 0), 0)) * 100)
-      : 0,
+    collectionRate,
   }
 }
 
@@ -247,7 +275,7 @@ export default async function DashboardPage() {
                         {payment.month.toString().padStart(2, '0')}/{payment.year} · {getDaysOverdue(payment.dueDate)}d vencido
                       </p>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right shrink-0">
                       <p className="text-xs font-bold text-red-600">{formatCurrency(payment.expectedAmount - payment.paidAmount)}</p>
                       <span className={`text-xs px-1.5 py-0.5 rounded-full ${getPaymentStatusColor(payment.status)}`}>
                         {getPaymentStatusLabel(payment.status)}
@@ -285,7 +313,7 @@ export default async function DashboardPage() {
                       <p className="text-xs font-medium text-gray-900 truncate">{incident.title}</p>
                       <p className="text-xs text-gray-500 truncate">{incident.property.name}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <div className="flex flex-col items-end gap-1 shrink-0">
                       <span className={`text-xs px-1.5 py-0.5 rounded-full ${getIncidentStatusColor(incident.status)}`}>
                         {getIncidentStatusLabel(incident.status)}
                       </span>
@@ -329,7 +357,7 @@ export default async function DashboardPage() {
               {data.propertyStats.map((prop, idx) => (
                 <Link key={prop.id} href={`/propiedades/${prop.id}`}>
                   <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 cursor-pointer">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                       idx === 0 ? 'bg-yellow-100 text-yellow-700' :
                       idx === 1 ? 'bg-gray-100 text-gray-600' :
                       idx === 2 ? 'bg-orange-100 text-orange-700' :
@@ -341,7 +369,7 @@ export default async function DashboardPage() {
                       <p className="text-sm font-medium text-gray-900 truncate">{prop.name}</p>
                       <p className="text-xs text-gray-500">{prop.activeTenants} inquilino(s) · {prop.openIncidents} incidencia(s)</p>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right shrink-0">
                       <p className={`text-sm font-bold ${prop.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(prop.netProfit)}
                       </p>
@@ -349,7 +377,7 @@ export default async function DashboardPage() {
                         {prop.income > 0 ? `${formatCurrency(prop.income)} cobrados` : 'Sin cobros'}
                       </p>
                     </div>
-                    <div className={`text-right flex-shrink-0 w-16 ${prop.rentability >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`text-right shrink-0 w-16 ${prop.rentability >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       <p className="text-sm font-bold">{prop.rentability > 0 ? '+' : ''}{prop.rentability}%</p>
                       <p className="text-xs text-gray-400">rentab.</p>
                     </div>

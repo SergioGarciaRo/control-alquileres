@@ -253,7 +253,7 @@ export function IncidentsPage({ initialIncidents, properties }: Props) {
                         {incident.cost && <span className="text-red-500 font-medium">💰 {formatCurrency(incident.cost)}</span>}
                       </div>
                     </div>
-                    <div className="flex gap-1 flex-shrink-0">
+                    <div className="flex gap-1 shrink-0">
                       <Button size="sm" variant="outline" onClick={() => openForm(incident)}>Editar</Button>
                       <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-600"
                         onClick={() => handleDelete(incident.id)}>Eliminar</Button>

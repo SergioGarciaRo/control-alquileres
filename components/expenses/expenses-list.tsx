@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Receipt, Plus, Loader2 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useRef, useState, useMemo } from 'react'
+import { Receipt, Plus, Loader2, Paperclip, CheckCircle, X } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,17 +26,20 @@ const CATEGORIES = [
 ]
 
 const categoryColors: Record<string, string> = {
-  COMMUNITY: 'bg-blue-100 text-blue-700',
+  COMMUNITY:   'bg-blue-100 text-blue-700',
   ELECTRICITY: 'bg-yellow-100 text-yellow-700',
-  WATER: 'bg-cyan-100 text-cyan-700',
-  GAS: 'bg-orange-100 text-orange-700',
-  INTERNET: 'bg-purple-100 text-purple-700',
-  INSURANCE: 'bg-green-100 text-green-700',
-  IBI: 'bg-red-100 text-red-700',
-  REPAIR: 'bg-gray-100 text-gray-700',
-  CLEANING: 'bg-teal-100 text-teal-700',
-  OTHER: 'bg-slate-100 text-slate-700',
+  WATER:       'bg-cyan-100 text-cyan-700',
+  GAS:         'bg-orange-100 text-orange-700',
+  INTERNET:    'bg-purple-100 text-purple-700',
+  INSURANCE:   'bg-green-100 text-green-700',
+  IBI:         'bg-red-100 text-red-700',
+  REPAIR:      'bg-gray-100 text-gray-700',
+  CLEANING:    'bg-teal-100 text-teal-700',
+  OTHER:       'bg-slate-100 text-slate-700',
 }
+
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+const MAX_SIZE = 5 * 1024 * 1024
 
 interface Expense {
   id: string
@@ -43,6 +47,7 @@ interface Expense {
   amount: number
   category: string
   description: string | null
+  receiptUrl: string | null
   property: { id: string; name: string }
 }
 
@@ -60,14 +65,17 @@ const defaultForm = {
 }
 
 export function ExpensesList({ initialExpenses, properties }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null)
   const [expenses, setExpenses] = useState(initialExpenses)
   const [showForm, setShowForm] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [form, setForm] = useState(defaultForm)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [filterCategory, setFilterCategory] = useState('ALL')
   const [filterProperty, setFilterProperty] = useState('ALL')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const now = new Date()
   const currentMonth = now.getMonth() + 1
@@ -87,9 +95,7 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
         const d = new Date(e.date)
         return d.getMonth() + 1 === currentMonth && d.getFullYear() === currentYear
       })
-      .forEach(e => {
-        acc[e.category] = (acc[e.category] || 0) + e.amount
-      })
+      .forEach(e => { acc[e.category] = (acc[e.category] || 0) + e.amount })
     return acc
   }, [expenses, currentMonth, currentYear])
 
@@ -109,8 +115,18 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
       setEditingExpense(null)
       setForm(defaultForm)
     }
+    setPendingFile(null)
     setError('')
     setShowForm(true)
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!ALLOWED_TYPES.includes(file.type)) { setError('Tipo no permitido. Usa PDF, JPG o PNG.'); return }
+    if (file.size > MAX_SIZE) { setError('El archivo no puede superar 5 MB'); return }
+    setError('')
+    setPendingFile(file)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -119,20 +135,33 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
     setError('')
 
     try {
+      // If a file is selected, upload it first to get the URL
+      let receiptUrl: string | null = editingExpense?.receiptUrl ?? null
+      if (pendingFile) {
+        const fd = new FormData()
+        fd.append('file', pendingFile)
+        fd.append('context', 'expense')
+        const upRes = await fetch('/api/receipts/upload-generic', { method: 'POST', body: fd })
+        if (!upRes.ok) { setError('Error al subir la factura'); setLoading(false); return }
+        const upData = await upRes.json()
+        receiptUrl = upData.url
+      }
+
       const method = editingExpense ? 'PUT' : 'POST'
       const url = editingExpense ? `/api/expenses/${editingExpense.id}` : '/api/expenses'
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, receiptUrl }),
       })
       const data = await res.json()
-
       if (!res.ok) { setError(data.error || 'Error al guardar'); setLoading(false); return }
 
       if (editingExpense) {
-        setExpenses(prev => prev.map(ex => ex.id === data.id ? { ...ex, ...data, property: ex.property } : ex))
+        setExpenses(prev => prev.map(ex =>
+          ex.id === data.id ? { ...ex, ...data, property: ex.property } : ex
+        ))
       } else {
         const prop = properties.find(p => p.id === form.propertyId)
         setExpenses(prev => [{ ...data, property: { id: prop!.id, name: prop!.name } }, ...prev])
@@ -145,10 +174,11 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este gasto?')) return
-    const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' })
-    if (res.ok) setExpenses(prev => prev.filter(e => e.id !== id))
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return
+    const res = await fetch(`/api/expenses/${confirmDeleteId}`, { method: 'DELETE' })
+    if (res.ok) setExpenses(prev => prev.filter(e => e.id !== confirmDeleteId))
+    setConfirmDeleteId(null)
   }
 
   return (
@@ -185,19 +215,13 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <select
-          value={filterCategory}
-          onChange={e => setFilterCategory(e.target.value)}
-          className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+          className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="ALL">Todas las categorías</option>
           {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
-        <select
-          value={filterProperty}
-          onChange={e => setFilterProperty(e.target.value)}
-          className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
+        <select value={filterProperty} onChange={e => setFilterProperty(e.target.value)}
+          className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="ALL">Todas las propiedades</option>
           {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
@@ -223,6 +247,7 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Descripción</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Propiedad</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Importe</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase" title="Factura adjunta">Fact.</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
@@ -235,13 +260,25 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
                       {getExpenseCategoryLabel(expense.category)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{expense.description || '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{expense.description || '—'}</td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{expense.property.name}</td>
                   <td className="px-4 py-3 text-right font-bold text-red-600">-{formatCurrency(expense.amount)}</td>
+                  <td className="px-4 py-3 text-center">
+                    {expense.receiptUrl ? (
+                      <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer"
+                        title="Ver factura" className="text-green-600 hover:text-green-700 inline-flex">
+                        <CheckCircle className="w-4 h-4" />
+                      </a>
+                    ) : (
+                      <span className="text-gray-200">
+                        <Paperclip className="w-4 h-4 inline" />
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openForm(expense)}>Editar</Button>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => handleDelete(expense.id)}>Eliminar</Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => setConfirmDeleteId(expense.id)}>Eliminar</Button>
                     </div>
                   </td>
                 </tr>
@@ -261,9 +298,7 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
             <div className="space-y-2">
               <Label>Propiedad *</Label>
               <Select value={form.propertyId} onValueChange={v => setForm(f => ({ ...f, propertyId: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una propiedad" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecciona una propiedad" /></SelectTrigger>
                 <SelectContent>
                   {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
@@ -295,6 +330,37 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
               <Textarea id="description" placeholder="Descripción del gasto..." rows={2}
                 value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
             </div>
+
+            {/* Receipt upload */}
+            <div className="space-y-2">
+              <Label>Factura / Justificante</Label>
+              <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileSelect} />
+              {pendingFile ? (
+                <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
+                  <span className="text-green-800 truncate flex-1">{pendingFile.name}</span>
+                  <button type="button" onClick={() => { setPendingFile(null); if (fileRef.current) fileRef.current.value = '' }}>
+                    <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                  </button>
+                </div>
+              ) : editingExpense?.receiptUrl ? (
+                <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-100 rounded-lg text-sm">
+                  <CheckCircle className="w-4 h-4 text-blue-500 shrink-0" />
+                  <a href={editingExpense.receiptUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline truncate flex-1">Ver factura actual</a>
+                  <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-gray-500 hover:text-blue-600">
+                    Reemplazar
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => fileRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors">
+                  <Paperclip className="w-4 h-4" />
+                  Adjuntar factura (PDF, JPG, PNG · máx. 5 MB)
+                </button>
+              )}
+            </div>
+
             {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{error}</div>}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
@@ -306,6 +372,15 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Eliminar gasto"
+        description="Se eliminará el gasto permanentemente. Esta acción no se puede deshacer."
+        confirmLabel="Eliminar gasto"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   )
 }

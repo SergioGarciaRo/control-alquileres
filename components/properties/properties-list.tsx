@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency, getPropertyStatusColor, getPropertyStatusLabel, getPropertyTypeLabel } from '@/lib/utils'
 import Link from 'next/link'
 import { PropertyFormDialog } from './property-form-dialog'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Property {
   id: string
@@ -38,16 +39,16 @@ export function PropertiesList({ initialProperties }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editingProperty, setEditingProperty] = useState<Property | null>(null)
   const [filter, setFilter] = useState<string>('ALL')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const router = useRouter()
 
   const filtered = filter === 'ALL' ? properties : properties.filter(p => p.status === filter)
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar esta propiedad? Se eliminarán todos los datos asociados.')) return
-    const res = await fetch(`/api/properties/${id}`, { method: 'DELETE' })
-    if (res.ok) {
-      setProperties(prev => prev.filter(p => p.id !== id))
-    }
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return
+    const res = await fetch(`/api/properties/${confirmDeleteId}`, { method: 'DELETE' })
+    if (res.ok) setProperties(prev => prev.filter(p => p.id !== confirmDeleteId))
+    setConfirmDeleteId(null)
   }
 
   const handleSaved = (property: Property) => {
@@ -145,7 +146,7 @@ export function PropertiesList({ initialProperties }: Props) {
                         <Edit2 className="w-3.5 h-3.5" />
                       </Button>
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:text-red-600"
-                        onClick={() => handleDelete(prop.id)}>
+                        onClick={() => setConfirmDeleteId(prop.id)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -156,7 +157,7 @@ export function PropertiesList({ initialProperties }: Props) {
                     <h3 className="font-bold text-gray-900 text-base hover:text-blue-600 transition-colors cursor-pointer">{prop.name}</h3>
                   </Link>
                   <div className="flex items-center gap-1 text-gray-400 text-xs mt-1 mb-4">
-                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    <MapPin className="w-3 h-3 shrink-0" />
                     <span className="truncate">{prop.address}</span>
                   </div>
 
@@ -218,12 +219,20 @@ export function PropertiesList({ initialProperties }: Props) {
         </div>
       )}
 
-      {/* Form Dialog */}
       <PropertyFormDialog
         open={showForm}
         onClose={() => { setShowForm(false); setEditingProperty(null) }}
         onSaved={handleSaved}
         property={editingProperty}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Eliminar propiedad"
+        description="Se eliminarán permanentemente todos los datos asociados: inquilinos, pagos, gastos, fianzas, incidencias y documentos. Esta acción no se puede deshacer."
+        confirmLabel="Eliminar propiedad"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteId(null)}
       />
     </div>
   )

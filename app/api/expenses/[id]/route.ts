@@ -13,7 +13,16 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const row = await prisma.expense.findFirst({ where: { id, property: { userId: session.user.id } } })
     if (!row) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
     const data = await req.json()
-    const updated = await prisma.expense.update({ where: { id }, data: { date: new Date(data.date), amount: parseFloat(data.amount), category: data.category, description: data.description || null } })
+    const updated = await prisma.expense.update({
+      where: { id },
+      data: {
+        date: new Date(data.date),
+        amount: parseFloat(data.amount),
+        category: data.category,
+        description: data.description || null,
+        receiptUrl: data.receiptUrl ?? row.receiptUrl,
+      },
+    })
     return NextResponse.json(updated)
   } catch { return NextResponse.json({ error: 'Error interno' }, { status: 500 }) }
 }
