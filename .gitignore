@@ -45,11 +45,7 @@ prisma/schema-build.prisma
 # Upload files (local dev)
 public/receipts/
 
-# Scripts
-scripts/
-
-# vercel
-.vercel
+scripts/schema-build.prisma
 
 # typescript
 *.tsbuildinfo
