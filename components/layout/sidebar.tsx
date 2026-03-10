@@ -6,7 +6,7 @@ import { signOut, useSession } from 'next-auth/react'
 import {
   LayoutDashboard, Building2, Users, CreditCard, Receipt,
   Shield, AlertTriangle, FileText, History, LogOut,
-  ChevronLeft, ChevronRight, TrendingUp,
+  ChevronLeft, ChevronRight, TrendingUp, X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -26,9 +26,11 @@ const navItems = [
 interface SidebarProps {
   collapsed: boolean
   onCollapse: (v: boolean) => void
+  mobileOpen: boolean
+  onMobileClose: () => void
 }
 
-export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
+export function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
 
@@ -36,20 +38,32 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
     <aside
       className={cn(
         'fixed left-0 top-0 h-full bg-gray-900 text-white flex flex-col transition-all duration-300 z-40',
-        collapsed ? 'w-16' : 'w-60'
+        // Mobile: drawer overlay, hidden off-screen by default, shown when mobileOpen
+        // Desktop (lg+): always visible, width depends on collapsed state
+        'lg:translate-x-0',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+        // On mobile always full width (w-60), on desktop depends on collapsed
+        collapsed ? 'lg:w-16' : 'lg:w-60',
+        'w-60',
       )}
     >
       {/* Logo */}
-      <div className={cn('flex items-center h-16 px-4 border-b border-gray-700', collapsed ? 'justify-center' : 'gap-3')}>
+      <div className={cn('flex items-center h-16 px-4 border-b border-gray-700', collapsed ? 'lg:justify-center' : 'gap-3')}>
         <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
           <Building2 className="w-5 h-5 text-white" />
         </div>
-        {!collapsed && (
-          <div>
-            <span className="font-bold text-white text-sm">RentalManager</span>
-            <p className="text-xs text-gray-400">Gestión de alquileres</p>
-          </div>
-        )}
+        <div className={cn('flex-1', collapsed && 'lg:hidden')}>
+          <span className="font-bold text-white text-sm">RentalManager</span>
+          <p className="text-xs text-gray-400">Gestión de alquileres</p>
+        </div>
+        {/* Close button — mobile only */}
+        <button
+          onClick={onMobileClose}
+          className="lg:hidden p-1 rounded text-gray-400 hover:text-white"
+          aria-label="Cerrar menú"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Nav */}
@@ -61,9 +75,10 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onMobileClose}
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all',
-                collapsed ? 'justify-center' : '',
+                collapsed ? 'lg:justify-center' : '',
                 active
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'
@@ -71,7 +86,7 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
               title={collapsed ? item.label : undefined}
             >
               <Icon className="w-5 h-5 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              <span className={cn(collapsed && 'lg:hidden')}>{item.label}</span>
             </Link>
           )
         })}
@@ -79,8 +94,8 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
 
       {/* User + collapse */}
       <div className="border-t border-gray-700 p-2 space-y-1">
-        {!collapsed && session?.user && (
-          <div className="px-3 py-2">
+        {session?.user && (
+          <div className={cn('px-3 py-2', collapsed && 'lg:hidden')}>
             <p className="text-xs font-medium text-white truncate">{session.user.name || session.user.email}</p>
             <p className="text-xs text-gray-400 truncate">{session.user.email}</p>
           </div>
@@ -89,14 +104,14 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
           onClick={() => signOut({ callbackUrl: '/login' })}
           className={cn(
             'flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-all',
-            collapsed ? 'justify-center' : ''
+            collapsed ? 'lg:justify-center' : ''
           )}
           title={collapsed ? 'Cerrar sesión' : undefined}
         >
           <LogOut className="w-5 h-5 shrink-0" />
-          {!collapsed && <span>Cerrar sesión</span>}
+          <span className={cn(collapsed && 'lg:hidden')}>Cerrar sesión</span>
         </button>
-        {/* Collapse toggle: solo en pantallas grandes */}
+        {/* Collapse toggle: desktop only */}
         <button
           onClick={() => onCollapse(!collapsed)}
           className={cn(

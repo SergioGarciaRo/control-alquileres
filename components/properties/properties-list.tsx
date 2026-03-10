@@ -135,7 +135,7 @@ export function PropertiesList({ initialProperties }: Props) {
                         {getPropertyStatusLabel(prop.status)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <Link href={`/propiedades/${prop.id}`}>
                         <Button size="icon" variant="ghost" className="h-7 w-7">
                           <Eye className="w-3.5 h-3.5" />

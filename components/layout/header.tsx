@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Search } from 'lucide-react'
+import { Bell, Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 
@@ -17,15 +17,29 @@ const pageTitles: Record<string, string> = {
   '/rentabilidad': 'Rentabilidad',
 }
 
-export function Header() {
+interface HeaderProps {
+  onMobileMenuToggle: () => void
+}
+
+export function Header({ onMobileMenuToggle }: HeaderProps) {
   const pathname = usePathname()
   const base = '/' + pathname.split('/')[1]
   const title = pageTitles[base] || 'RentalManager'
   const version = 'v0.2.1'
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6">
-      <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-6">
+      <div className="flex items-center gap-3">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={onMobileMenuToggle}
+          className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+          aria-label="Abrir menú"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+      </div>
       <div className="flex items-center gap-3">
         <span className="hidden sm:inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium bg-gray-100 text-gray-500">
           {version}
