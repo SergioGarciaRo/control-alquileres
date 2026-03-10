@@ -43,6 +43,32 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
+    // Validate required fields
+    if (!data.propertyId) return NextResponse.json({ error: 'Propiedad requerida' }, { status: 400 })
+    if (!data.name?.trim()) return NextResponse.json({ error: 'Nombre del inquilino requerido' }, { status: 400 })
+    if (!data.startDate) return NextResponse.json({ error: 'Fecha de inicio requerida' }, { status: 400 })
+
+    const rent = parseFloat(data.rent)
+    if (isNaN(rent) || rent < 0) {
+      return NextResponse.json({ error: 'Renta inválida' }, { status: 400 })
+    }
+
+    const startDate = new Date(data.startDate)
+    if (isNaN(startDate.getTime())) {
+      return NextResponse.json({ error: 'Fecha de inicio inválida' }, { status: 400 })
+    }
+
+    let endDate: Date | null = null
+    if (data.endDate) {
+      endDate = new Date(data.endDate)
+      if (isNaN(endDate.getTime())) {
+        return NextResponse.json({ error: 'Fecha de fin inválida' }, { status: 400 })
+      }
+      if (endDate <= startDate) {
+        return NextResponse.json({ error: 'La fecha de fin debe ser posterior a la de inicio' }, { status: 400 })
+      }
+    }
+
     // Verify property belongs to user
     const property = await prisma.property.findFirst({
       where: { id: data.propertyId, userId: session.user.id },
@@ -52,14 +78,15 @@ export async function POST(request: NextRequest) {
     const tenant = await prisma.tenant.create({
       data: {
         propertyId: data.propertyId,
-        name: data.name,
-        phone: data.phone || null,
-        email: data.email || null,
-        startDate: new Date(data.startDate),
-        endDate: data.endDate ? new Date(data.endDate) : null,
-        rent: parseFloat(data.rent),
+        name: data.name.trim(),
+        phone: data.phone?.trim() || null,
+        email: data.email?.trim() || null,
+        dni: data.dni?.trim() || null,
+        startDate,
+        endDate,
+        rent,
         status: data.status || 'ACTIVE',
-        notes: data.notes || null,
+        notes: data.notes?.trim() || null,
       },
     })
 

@@ -13,6 +13,17 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(date: Date | string): string {
+  // ISO date strings like "2024-03-15" are UTC midnight.
+  // Parsing them directly causes an off-by-one-day in Spain (UTC+1/+2).
+  // Force local interpretation by replacing '-' separators.
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [y, m, d] = date.split('-').map(Number)
+    return new Intl.DateTimeFormat('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date(y, m - 1, d))
+  }
   const d = typeof date === 'string' ? new Date(date) : date
   return new Intl.DateTimeFormat('es-ES', {
     day: '2-digit',

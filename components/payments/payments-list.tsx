@@ -193,7 +193,8 @@ export function PaymentsList({ initialPayments, properties }: Props) {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
@@ -203,7 +204,9 @@ export function PaymentsList({ initialPayments, properties }: Props) {
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Pagado</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha pago</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Método</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase" title="Justificante adjunto">Just.</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap" title="Justificante adjunto">
+                  Just.
+                </th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
@@ -262,7 +265,8 @@ export function PaymentsList({ initialPayments, properties }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
 

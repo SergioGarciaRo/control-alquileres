@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -30,6 +30,21 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
+    // Validate required fields
+    if (!data.propertyId) return NextResponse.json({ error: 'Propiedad requerida' }, { status: 400 })
+    if (!data.tenantId) return NextResponse.json({ error: 'Inquilino requerido' }, { status: 400 })
+    if (!data.deliveryDate) return NextResponse.json({ error: 'Fecha de entrega requerida' }, { status: 400 })
+
+    const amount = parseFloat(data.amount)
+    if (isNaN(amount) || amount <= 0) {
+      return NextResponse.json({ error: 'Importe de fianza inválido (debe ser mayor que 0)' }, { status: 400 })
+    }
+
+    const deliveryDate = new Date(data.deliveryDate)
+    if (isNaN(deliveryDate.getTime())) {
+      return NextResponse.json({ error: 'Fecha de entrega inválida' }, { status: 400 })
+    }
+
     const property = await prisma.property.findFirst({
       where: { id: data.propertyId, userId: session.user.id },
     })
@@ -39,8 +54,8 @@ export async function POST(request: NextRequest) {
       data: {
         propertyId: data.propertyId,
         tenantId: data.tenantId,
-        amount: parseFloat(data.amount),
-        deliveryDate: new Date(data.deliveryDate),
+        amount,
+        deliveryDate,
         status: data.status || 'HELD',
         returnDate: data.returnDate ? new Date(data.returnDate) : null,
         retainedAmount: data.retainedAmount ? parseFloat(data.retainedAmount) : null,

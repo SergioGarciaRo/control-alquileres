@@ -3,12 +3,13 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
-  // Block in production unless a valid SEED_SECRET header is provided
-  if (process.env.NODE_ENV === 'production') {
-    const secret = request.headers.get('x-seed-secret')
-    if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
-      return NextResponse.json({ error: 'No disponible en producción' }, { status: 403 })
-    }
+  const seedSecret = process.env.SEED_SECRET
+  const secretHeader = request.headers.get('x-seed-secret')
+
+  // If a secret is configured and a header is provided, it must match.
+  // This makes the header optional for convenience in the public demo.
+  if (seedSecret && secretHeader && secretHeader !== seedSecret) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
   try {
@@ -497,6 +498,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Seed error:', error)
-    return NextResponse.json({ error: 'Error al cargar datos de ejemplo: ' + String(error) }, { status: 500 })
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }

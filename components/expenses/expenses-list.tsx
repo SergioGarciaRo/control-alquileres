@@ -239,7 +239,8 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
@@ -247,7 +248,12 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Descripción</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Propiedad</th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Importe</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase" title="Factura adjunta">Fact.</th>
+                <th
+                  className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap"
+                  title="Factura adjunta"
+                >
+                  Fact.
+                </th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
@@ -284,7 +290,8 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
 
