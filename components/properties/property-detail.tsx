@@ -46,22 +46,22 @@ export function PropertyDetail({ property: initialProperty }: Props) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
           <Link href="/propiedades">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-xl font-bold text-gray-900">{property.name}</h2>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 flex-wrap">
               <MapPin className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-sm text-gray-500">{property.address}</span>
+              <span className="truncate">{property.address}</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:justify-end">
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPropertyStatusColor(property.status)}`}>
             {getPropertyStatusLabel(property.status)}
           </span>

@@ -90,7 +90,7 @@ export default async function HistoricoPage() {
             </CardHeader>
             <CardContent className="space-y-4 pt-0">
               {/* Quick stats */}
-              <div className="grid grid-cols-3 gap-3 p-3 bg-gray-50 rounded-lg text-center text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-lg text-center text-sm">
                 <div>
                   <p className="text-xs text-gray-400">Total cobrado</p>
                   <p className="font-bold text-green-600">{formatCurrency(totalPayments)}</p>
