@@ -356,7 +356,7 @@ export default async function DashboardPage() {
             <div className="space-y-3">
               {data.propertyStats.map((prop, idx) => (
                 <Link key={prop.id} href={`/propiedades/${prop.id}`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 cursor-pointer">
+                  <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 cursor-pointer">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                       idx === 0 ? 'bg-yellow-100 text-yellow-700' :
                       idx === 1 ? 'bg-gray-100 text-gray-600' :
@@ -367,19 +367,15 @@ export default async function DashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{prop.name}</p>
-                      <p className="text-xs text-gray-500">{prop.activeTenants} inquilino(s) · {prop.openIncidents} incidencia(s)</p>
+                      <p className="text-xs text-gray-500">{prop.activeTenants} inq. · {prop.openIncidents} incid.</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className={`text-sm font-bold ${prop.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(prop.netProfit)}
                       </p>
-                      <p className="text-xs text-gray-400">
-                        {prop.income > 0 ? `${formatCurrency(prop.income)} cobrados` : 'Sin cobros'}
+                      <p className={`text-xs font-semibold ${prop.rentability >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {prop.rentability > 0 ? '+' : ''}{prop.rentability}%
                       </p>
-                    </div>
-                    <div className={`text-right shrink-0 w-16 ${prop.rentability >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      <p className="text-sm font-bold">{prop.rentability > 0 ? '+' : ''}{prop.rentability}%</p>
-                      <p className="text-xs text-gray-400">rentab.</p>
                     </div>
                   </div>
                 </Link>
