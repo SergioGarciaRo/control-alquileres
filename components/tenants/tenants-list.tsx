@@ -206,12 +206,12 @@ export function TenantsList({ initialTenants, properties }: Props) {
                     </div>
 
                     {/* Right side */}
-                    <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-1">
+                    <div className="flex sm:flex-col items-stretch sm:items-end gap-3 sm:gap-1 w-full sm:w-auto">
                       <p className="text-base font-bold text-gray-900">{formatCurrency(tenant.rent)}<span className="text-xs font-normal text-gray-400">/mes</span></p>
                       {depositAmount > 0 && (
                         <p className="text-xs text-gray-400">Fianza: {formatCurrency(depositAmount)}</p>
                       )}
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap justify-end gap-1">
                         <Link href={`/inquilinos/${tenant.id}`}>
                           <Button size="sm" variant="ghost" className="gap-1">
                             <Eye className="w-3.5 h-3.5" />

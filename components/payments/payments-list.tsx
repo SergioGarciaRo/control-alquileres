@@ -200,26 +200,26 @@ export function PaymentsList({ initialPayments, properties }: Props) {
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-[760px] text-sm">
+            <table className="min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Mes</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Propiedad</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Esperado</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Pagado</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha pago</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Método</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap" title="Justificante adjunto">
+                <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Mes</th>
+                <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Propiedad</th>
+                <th className="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Esperado</th>
+                <th className="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Pagado</th>
+                <th className="hidden md:table-cell text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha pago</th>
+                <th className="hidden md:table-cell text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Método</th>
+                <th className="hidden sm:table-cell text-center px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap" title="Justificante adjunto">
                   Just.
                 </th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                <th className="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {paged.map(payment => (
                 <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-3">
                     <div className="flex items-center gap-2">
                       {statusIcon(payment.status)}
                       <span className={`text-xs px-2 py-0.5 rounded-full ${getPaymentStatusColor(payment.status)}`}>
@@ -227,24 +227,24 @@ export function PaymentsList({ initialPayments, properties }: Props) {
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-medium capitalize">
+                  <td className="px-3 sm:px-4 py-3 font-medium capitalize">
                     {formatMonth(payment.month, payment.year)}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{payment.property.name}</td>
-                  <td className="px-4 py-3 text-right font-medium">{formatCurrency(payment.expectedAmount)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 sm:px-4 py-3 text-gray-600">{payment.property.name}</td>
+                  <td className="px-3 sm:px-4 py-3 text-right font-medium">{formatCurrency(payment.expectedAmount)}</td>
+                  <td className="px-3 sm:px-4 py-3 text-right">
                     <span className={payment.paidAmount >= payment.expectedAmount ? 'text-green-600 font-bold' :
                       payment.paidAmount > 0 ? 'text-orange-600 font-bold' : 'text-gray-400'}>
                       {formatCurrency(payment.paidAmount)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
+                  <td className="hidden md:table-cell px-3 sm:px-4 py-3 text-gray-500 text-xs">
                     {payment.paidDate ? formatDate(payment.paidDate) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
+                  <td className="hidden md:table-cell px-3 sm:px-4 py-3 text-gray-500 text-xs">
                     {payment.method ? (PAYMENT_METHOD[payment.method] ?? payment.method) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="hidden sm:table-cell px-3 sm:px-4 py-3 text-center">
                     <ReceiptButton
                       paymentId={payment.id}
                       receiptUrl={payment.receiptUrl}
@@ -256,7 +256,7 @@ export function PaymentsList({ initialPayments, properties }: Props) {
                       }
                     />
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 sm:px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" className="h-7 text-xs"
                         onClick={() => { setEditingPayment(payment); setShowForm(true) }}>

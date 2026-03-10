@@ -170,18 +170,18 @@ export function PropertiesList({ initialProperties }: Props) {
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="text-center p-2 rounded-lg bg-gray-50">
+                  <div className="grid grid-cols-3 gap-2 items-stretch mb-4">
+                    <div className="text-center p-2 rounded-lg bg-gray-50 h-full flex flex-col justify-center">
                       <p className="text-xs text-gray-400 mb-0.5">Renta</p>
                       <p className="text-sm font-bold text-gray-900">{formatCurrency(prop.expectedRent)}</p>
                     </div>
-                    <div className="text-center p-2 rounded-lg bg-gray-50">
+                    <div className="text-center p-2 rounded-lg bg-gray-50 h-full flex flex-col justify-center">
                       <p className="text-xs text-gray-400 mb-0.5">Cobrado</p>
                       <p className={`text-sm font-bold ${monthlyIncome > 0 ? 'text-green-600' : 'text-gray-400'}`}>
                         {formatCurrency(monthlyIncome)}
                       </p>
                     </div>
-                    <div className="text-center p-2 rounded-lg bg-gray-50">
+                    <div className="text-center p-2 rounded-lg bg-gray-50 h-full flex flex-col justify-center">
                       <p className="text-xs text-gray-400 mb-0.5">Gastos fijos</p>
                       <p className="text-sm font-bold text-orange-600">{formatCurrency(prop.fixedExpenses)}</p>
                     </div>

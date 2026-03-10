@@ -356,7 +356,7 @@ export default async function DashboardPage() {
             <div className="space-y-3">
               {data.propertyStats.map((prop, idx) => (
                 <Link key={prop.id} href={`/propiedades/${prop.id}`}>
-                  <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 cursor-pointer">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 cursor-pointer">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                       idx === 0 ? 'bg-yellow-100 text-yellow-700' :
                       idx === 1 ? 'bg-gray-100 text-gray-600' :

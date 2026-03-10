@@ -247,36 +247,36 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-[720px] text-sm">
+            <table className="min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Categoría</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Descripción</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Propiedad</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Importe</th>
+                <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
+                <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Categoría</th>
+                <th className="hidden sm:table-cell text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Descripción</th>
+                <th className="hidden md:table-cell text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Propiedad</th>
+                <th className="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Importe</th>
                 <th
-                  className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap"
+                  className="hidden sm:table-cell text-center px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap"
                   title="Factura adjunta"
                 >
                   Fact.
                 </th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                <th className="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {paged.map(expense => (
                 <tr key={expense.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(expense.date)}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-3 text-gray-500 text-xs">{formatDate(expense.date)}</td>
+                  <td className="px-3 sm:px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryColors[expense.category] || 'bg-gray-100 text-gray-700'}`}>
                       {getExpenseCategoryLabel(expense.category)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{expense.description || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{expense.property.name}</td>
-                  <td className="px-4 py-3 text-right font-bold text-red-600">-{formatCurrency(expense.amount)}</td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="hidden sm:table-cell px-3 sm:px-4 py-3 text-gray-600 max-w-xs truncate">{expense.description || '—'}</td>
+                  <td className="hidden md:table-cell px-3 sm:px-4 py-3 text-gray-500 text-xs">{expense.property.name}</td>
+                  <td className="px-3 sm:px-4 py-3 text-right font-bold text-red-600">-{formatCurrency(expense.amount)}</td>
+                  <td className="hidden sm:table-cell px-3 sm:px-4 py-3 text-center">
                     {expense.receiptUrl ? (
                       <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer"
                         title="Ver factura" className="text-green-600 hover:text-green-700 inline-flex">
@@ -288,7 +288,7 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 sm:px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openForm(expense)}>Editar</Button>
                       <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => setConfirmDeleteId(expense.id)}>Eliminar</Button>
