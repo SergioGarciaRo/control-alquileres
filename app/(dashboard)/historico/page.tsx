@@ -83,9 +83,9 @@ export default async function HistoricoPage() {
         return (
           <Card key={property.id}>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                 <span>{property.name}</span>
-                <span className="text-sm font-normal text-gray-500">{property.address}</span>
+                <span className="text-sm font-normal text-gray-500 truncate">{property.address}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-0">
@@ -121,40 +121,41 @@ export default async function HistoricoPage() {
                       const deposit = tenant.deposits[0]
 
                       return (
-                        <div key={tenant.id} className="flex flex-col sm:flex-row sm:items-start justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 gap-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-medium text-gray-900">{tenant.name}</span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${getTenantStatusColor(tenant.status)}`}>
+                        <div key={tenant.id} className="p-3 rounded-lg border border-gray-100 hover:bg-gray-50 space-y-2">
+                          {/* Row 1: name + status + rent */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <span className="text-sm font-medium text-gray-900 truncate">{tenant.name}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${getTenantStatusColor(tenant.status)}`}>
                                 {getTenantStatusLabel(tenant.status)}
                               </span>
                               {unpaidPayments > 0 && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 shrink-0">
                                   {unpaidPayments} impago(s)
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {formatDate(tenant.startDate)} → {tenant.endDate ? formatDate(tenant.endDate) : 'Actualmente'}
-                            </p>
-                            <div className="flex gap-3 mt-1 text-xs text-gray-500">
-                              {tenant.phone && <span>📞 {tenant.phone}</span>}
-                              {tenant.email && <span>✉️ {tenant.email}</span>}
-                            </div>
+                            <span className="text-sm font-bold text-gray-900 shrink-0">{formatCurrency(tenant.rent)}/mes</span>
                           </div>
-                          <div className="text-right text-sm shrink-0">
-                            <p className="font-bold">{formatCurrency(tenant.rent)}/mes</p>
+                          {/* Row 2: dates + deposit */}
+                          <div className="flex items-center justify-between gap-2 text-xs text-gray-400">
+                            <span>{formatDate(tenant.startDate)} → {tenant.endDate ? formatDate(tenant.endDate) : 'Actualmente'}</span>
                             {deposit && (
-                              <p className="text-xs text-gray-400">
+                              <span className="shrink-0">
                                 Fianza: {formatCurrency(deposit.amount)}
-                                {deposit.status === 'RETURNED_FULL' ? ' ✓ devuelta' :
-                                 deposit.status === 'RETAINED' ? ' ⚠ retenida' : ' 📋 activa'}
-                              </p>
-                            )}
-                            {tenant.notes && (
-                              <p className="text-xs text-gray-400 italic mt-1 max-w-48">{tenant.notes}</p>
+                                {deposit.status === 'RETURNED_FULL' ? ' ✓' : deposit.status === 'RETAINED' ? ' ⚠' : ''}
+                              </span>
                             )}
                           </div>
+                          {(tenant.phone || tenant.email) && (
+                            <div className="flex gap-3 text-xs text-gray-500">
+                              {tenant.phone && <span>📞 {tenant.phone}</span>}
+                              {tenant.email && <span className="truncate">✉️ {tenant.email}</span>}
+                            </div>
+                          )}
+                          {tenant.notes && (
+                            <p className="text-xs text-gray-400 italic">{tenant.notes}</p>
+                          )}
                         </div>
                       )
                     })}
@@ -192,10 +193,10 @@ export default async function HistoricoPage() {
                   </h4>
                   <div className="space-y-1">
                     {incidentHistory.slice(0, 5).map(incident => (
-                      <div key={incident.id} className="flex items-center justify-between p-2 rounded text-xs bg-gray-50">
-                        <span className="font-medium">{incident.title}</span>
-                        <div className="flex items-center gap-2 text-gray-400">
-                          {incident.cost && <span className="text-red-500">{formatCurrency(incident.cost)}</span>}
+                      <div key={incident.id} className="flex items-start justify-between gap-2 p-2 rounded text-xs bg-gray-50">
+                        <span className="font-medium text-gray-800 min-w-0 truncate">{incident.title}</span>
+                        <div className="flex items-center gap-2 text-gray-400 shrink-0">
+                          {incident.cost && <span className="text-red-500 font-medium">{formatCurrency(incident.cost)}</span>}
                           <span>{formatDate(incident.openDate)}</span>
                         </div>
                       </div>
