@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Users, Plus, Phone, Mail, Calendar, AlertTriangle, CheckCircle, Building2, Eye } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -39,14 +39,24 @@ export function TenantsList({ initialTenants, properties }: Props) {
   const [filter, setFilter] = useState('ALL')
   const [search, setSearch] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
-  const filtered = tenants
-    .filter(t => filter === 'ALL' || t.status === filter)
-    .filter(t =>
-      search === '' ||
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.property.name.toLowerCase().includes(search.toLowerCase())
-    )
+  const filtered = useMemo(
+    () =>
+      tenants
+        .filter((t) => filter === 'ALL' || t.status === filter)
+        .filter((t) =>
+          search === '' ||
+          t.name.toLowerCase().includes(search.toLowerCase()) ||
+          t.property.name.toLowerCase().includes(search.toLowerCase())
+        ),
+    [tenants, filter, search],
+  )
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   const handleDelete = async () => {
     if (!confirmDeleteId) return
@@ -127,7 +137,7 @@ export function TenantsList({ initialTenants, properties }: Props) {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(tenant => {
+          {paged.map(tenant => {
             const pendingPayments = tenant.tenantPayments.length
             const depositAmount = tenant.deposits.reduce((s: number, d: any) => s + d.amount, 0)
             const isExpiringSoon = tenant.endDate && (() => {
@@ -228,6 +238,37 @@ export function TenantsList({ initialTenants, properties }: Props) {
               </Card>
             )
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filtered.length > pageSize && (
+        <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
+          <p>
+            Mostrando {((safePage - 1) * pageSize) + 1}-
+            {Math.min(safePage * pageSize, filtered.length)} de {filtered.length} inquilinos
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={safePage === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-2 py-1 rounded border border-gray-200 disabled:opacity-40 disabled:cursor-default"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {safePage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage === totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="px-2 py-1 rounded border border-gray-200 disabled:opacity-40 disabled:cursor-default"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       )}
 

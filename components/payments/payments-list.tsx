@@ -42,6 +42,8 @@ export function PaymentsList({ initialPayments, properties }: Props) {
   const [filterMonth, setFilterMonth] = useState('')
   const [filterProperty, setFilterProperty] = useState('ALL')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 12
 
   const now = new Date()
   const currentMonth = now.getMonth() + 1
@@ -49,14 +51,18 @@ export function PaymentsList({ initialPayments, properties }: Props) {
 
   const filtered = useMemo(() => {
     return payments
-      .filter(p => filterStatus === 'ALL' || p.status === filterStatus)
-      .filter(p => filterProperty === 'ALL' || p.property.id === filterProperty)
-      .filter(p => {
+      .filter((p) => filterStatus === 'ALL' || p.status === filterStatus)
+      .filter((p) => filterProperty === 'ALL' || p.property.id === filterProperty)
+      .filter((p) => {
         if (!filterMonth) return true
         const [y, m] = filterMonth.split('-')
         return p.year === parseInt(y) && p.month === parseInt(m)
       })
   }, [payments, filterStatus, filterMonth, filterProperty])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   const stats = useMemo(() => {
     const currentMonthPayments = payments.filter(p => p.month === currentMonth && p.year === currentYear)
@@ -211,7 +217,7 @@ export function PaymentsList({ initialPayments, properties }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filtered.map(payment => (
+              {paged.map(payment => (
                 <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -266,6 +272,37 @@ export function PaymentsList({ initialPayments, properties }: Props) {
               ))}
             </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filtered.length > pageSize && (
+        <div className="flex items-center justify-between gap-3 text-xs text-gray-500 mt-2">
+          <p>
+            Mostrando {((safePage - 1) * pageSize) + 1}-
+            {Math.min(safePage * pageSize, filtered.length)} de {filtered.length} pagos
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={safePage === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-2 py-1 rounded border border-gray-200 disabled:opacity-40 disabled:cursor-default"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {safePage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage === totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="px-2 py-1 rounded border border-gray-200 disabled:opacity-40 disabled:cursor-default"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       )}
