@@ -247,7 +247,7 @@ export function ExpensesList({ initialExpenses, properties }: Props) {
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-[640px] text-sm">
+            <table className="min-w-160 text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>

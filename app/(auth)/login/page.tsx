@@ -70,6 +70,9 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">RentalManager</h1>
           <p className="text-gray-500 mt-1">Gestión profesional de alquileres</p>
+          <span className="inline-flex items-center mt-2 px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-400">
+            v0.2.1
+          </span>
         </div>
 
         <Card className="shadow-xl border-gray-100">
