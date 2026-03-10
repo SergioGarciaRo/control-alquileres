@@ -33,8 +33,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'El archivo no puede superar 5 MB' }, { status: 400 })
     }
 
-    const ext = extname(file.name) || '.pdf'
-    const filename = `${context}-${session.user.id}-${Date.now()}${ext}`
+    const ext = extname(file.name).replace(/[^a-zA-Z0-9.]/g, '').slice(0, 10) || '.pdf'
+    const safeContext = (context || 'file').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20)
+    const filename = `${safeContext}-${session.user.id}-${Date.now()}${ext}`
     const uploadDir = join(process.cwd(), 'public', 'receipts')
 
     await mkdir(uploadDir, { recursive: true })

@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
     })
     if (!payment) return NextResponse.json({ error: 'Pago no encontrado' }, { status: 404 })
 
-    const ext = extname(file.name) || (file.type === 'application/pdf' ? '.pdf' : '.jpg')
+    const rawExt = extname(file.name).replace(/[^a-zA-Z0-9.]/g, '').slice(0, 10)
+    const ext = rawExt || (file.type === 'application/pdf' ? '.pdf' : '.jpg')
     const filename = `receipt-${paymentId}-${Date.now()}${ext}`
     const uploadDir = join(process.cwd(), 'public', 'receipts')
 

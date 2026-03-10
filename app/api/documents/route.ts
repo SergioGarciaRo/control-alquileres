@@ -40,6 +40,14 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
+    if (!data.name?.trim()) return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 })
+    if (!data.url?.trim()) return NextResponse.json({ error: 'URL requerida' }, { status: 400 })
+
+    // Block dangerous URL protocols (XSS prevention)
+    if (/^javascript:/i.test(data.url.trim()) || /^data:/i.test(data.url.trim())) {
+      return NextResponse.json({ error: 'URL inválida' }, { status: 400 })
+    }
+
     if (data.propertyId) {
       const property = await prisma.property.findFirst({
         where: { id: data.propertyId, userId: session.user.id },
@@ -47,14 +55,30 @@ export async function POST(request: NextRequest) {
       if (!property) return NextResponse.json({ error: 'Propiedad no encontrada' }, { status: 404 })
     }
 
+    // Validate tenant ownership (prevent IDOR)
+    if (data.tenantId) {
+      const tenant = await prisma.tenant.findFirst({
+        where: { id: data.tenantId, property: { userId: session.user.id } },
+      })
+      if (!tenant) return NextResponse.json({ error: 'Inquilino no encontrado' }, { status: 404 })
+    }
+
+    // Validate incident ownership (prevent IDOR)
+    if (data.incidentId) {
+      const incident = await prisma.incident.findFirst({
+        where: { id: data.incidentId, property: { userId: session.user.id } },
+      })
+      if (!incident) return NextResponse.json({ error: 'Incidencia no encontrada' }, { status: 404 })
+    }
+
     const document = await prisma.document.create({
       data: {
         propertyId: data.propertyId || null,
         tenantId: data.tenantId || null,
         incidentId: data.incidentId || null,
-        name: data.name,
+        name: data.name.trim(),
         type: data.type,
-        url: data.url,
+        url: data.url.trim(),
         size: data.size || null,
         mimeType: data.mimeType || null,
       },

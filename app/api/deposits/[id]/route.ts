@@ -27,6 +27,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (data.retainedAmount && retainedAmount === null) {
       return NextResponse.json({ error: 'Importe retenido inválido' }, { status: 400 })
     }
+    if (retainedAmount !== null && retainedAmount > amount) {
+      return NextResponse.json({ error: 'El importe retenido no puede superar el importe de la fianza' }, { status: 400 })
+    }
 
     const updated = await prisma.deposit.update({
       where: { id },

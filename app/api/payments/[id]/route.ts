@@ -32,7 +32,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         paidAmount: paid,
         dueDate,
         paidDate: paid > 0 ? (data.paidDate ? new Date(data.paidDate) : new Date()) : null,
-        status: data.status && data.status !== 'auto' ? data.status : status,
+        status,  // Always auto-calculated from paidAmount/expectedAmount/dueDate
         method: data.method || null,
         notes: data.notes || null,
       },
