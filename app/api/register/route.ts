@@ -10,6 +10,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email y contraseña son requeridos' }, { status: 400 })
     }
 
+    // Length limits to prevent abuse and DoS
+    if (typeof email !== 'string' || email.length > 254) {
+      return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
+    }
+    if (typeof password !== 'string' || password.length > 128) {
+      return NextResponse.json({ error: 'Contraseña demasiado larga' }, { status: 400 })
+    }
+    if (name !== undefined && name !== null && (typeof name !== 'string' || name.length > 200)) {
+      return NextResponse.json({ error: 'Nombre demasiado largo' }, { status: 400 })
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return NextResponse.json({ error: 'Formato de email inválido' }, { status: 400 })

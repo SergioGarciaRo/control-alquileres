@@ -6,9 +6,12 @@ export async function POST(request: NextRequest) {
   const seedSecret = process.env.SEED_SECRET
   const secretHeader = request.headers.get('x-seed-secret')
 
-  // If a secret is configured and a header is provided, it must match.
-  // This makes the header optional for convenience in the public demo.
-  if (seedSecret && secretHeader && secretHeader !== seedSecret) {
+  // SEED_SECRET must be configured; if not, the endpoint is disabled for safety.
+  if (!seedSecret) {
+    return NextResponse.json({ error: 'Endpoint no disponible' }, { status: 403 })
+  }
+
+  if (secretHeader !== seedSecret) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 

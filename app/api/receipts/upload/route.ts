@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
-import { join, extname } from 'path'
+import { writeFile, mkdir, unlink } from 'fs/promises'
+import { join, extname, basename } from 'path'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 const MAX_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
@@ -71,6 +71,13 @@ export async function DELETE(request: NextRequest) {
       where: { id: paymentId, property: { userId: session.user.id } },
     })
     if (!payment) return NextResponse.json({ error: 'Pago no encontrado' }, { status: 404 })
+
+    // Delete physical file if it exists
+    if (payment.receiptUrl) {
+      const filename = basename(payment.receiptUrl)
+      const filePath = join(process.cwd(), 'public', 'receipts', filename)
+      try { await unlink(filePath) } catch { /* file already gone, ignore */ }
+    }
 
     await prisma.payment.update({
       where: { id: paymentId },

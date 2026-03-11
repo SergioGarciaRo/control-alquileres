@@ -23,14 +23,15 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         })
 
+        // Use generic message to prevent user enumeration
         if (!user) {
-          throw new Error('Usuario no encontrado')
+          throw new Error('Credenciales incorrectas')
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password)
 
         if (!isValid) {
-          throw new Error('Contraseña incorrecta')
+          throw new Error('Credenciales incorrectas')
         }
 
         return {

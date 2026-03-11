@@ -43,6 +43,14 @@ export async function POST(request: NextRequest) {
     })
     if (!property) return NextResponse.json({ error: 'Propiedad no encontrada' }, { status: 404 })
 
+    // Verify tenant belongs to this user if provided (prevent cross-user reference)
+    if (data.tenantId) {
+      const tenant = await prisma.tenant.findFirst({
+        where: { id: data.tenantId, property: { userId: session.user.id } },
+      })
+      if (!tenant) return NextResponse.json({ error: 'Inquilino no encontrado' }, { status: 404 })
+    }
+
     const incident = await prisma.incident.create({
       data: {
         propertyId: data.propertyId,

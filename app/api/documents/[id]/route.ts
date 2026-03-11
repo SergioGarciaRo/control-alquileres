@@ -10,7 +10,18 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    const row = await prisma.document.findFirst({ where: { id, property: { userId: session.user.id } } })
+    // A document may be linked via property, tenant, or incident.
+    // Check ownership through whichever relation is present.
+    const row = await prisma.document.findFirst({
+      where: {
+        id,
+        OR: [
+          { property: { userId: session.user.id } },
+          { tenant: { property: { userId: session.user.id } } },
+          { incident: { property: { userId: session.user.id } } },
+        ],
+      },
+    })
     if (!row) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
     await prisma.document.delete({ where: { id } })
     return NextResponse.json({ success: true })

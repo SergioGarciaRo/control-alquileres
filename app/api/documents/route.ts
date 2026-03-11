@@ -15,7 +15,11 @@ export async function GET(request: NextRequest) {
 
     const documents = await prisma.document.findMany({
       where: {
-        property: { userId: session.user.id },
+        OR: [
+          { property: { userId: session.user.id } },
+          { tenant: { property: { userId: session.user.id } } },
+          { incident: { property: { userId: session.user.id } } },
+        ],
         ...(propertyId && { propertyId }),
         ...(tenantId && { tenantId }),
         ...(type && { type }),
@@ -43,9 +47,10 @@ export async function POST(request: NextRequest) {
     if (!data.name?.trim()) return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 })
     if (!data.url?.trim()) return NextResponse.json({ error: 'URL requerida' }, { status: 400 })
 
-    // Block dangerous URL protocols (XSS prevention)
-    if (/^javascript:/i.test(data.url.trim()) || /^data:/i.test(data.url.trim())) {
-      return NextResponse.json({ error: 'URL inválida' }, { status: 400 })
+    // Whitelist safe URL protocols (XSS prevention — blacklisting is incomplete)
+    const trimmedUrl = data.url.trim()
+    if (!/^(https?:\/\/|\/)/i.test(trimmedUrl)) {
+      return NextResponse.json({ error: 'URL inválida. Solo se permiten URLs http, https o rutas relativas.' }, { status: 400 })
     }
 
     if (data.propertyId) {
