@@ -4,14 +4,17 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Building2, Eye, EyeOff, Loader2, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useLanguage } from '@/context/language-context'
+import type { Lang } from '@/lib/i18n/translations'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { t, lang, setLang } = useLanguage()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -30,7 +33,7 @@ export default function LoginPage() {
     })
 
     if (result?.error) {
-      setError('Email o contraseña incorrectos')
+      setError(t('login.error'))
       setLoading(false)
     } else {
       router.push('/dashboard')
@@ -41,7 +44,6 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    // First seed the database
     try {
       await fetch('/api/seed', { method: 'POST' })
     } catch {}
@@ -53,23 +55,49 @@ export default function LoginPage() {
     })
 
     if (result?.error) {
-      setError('Error al cargar demo. Por favor, intenta de nuevo.')
+      setError(t('login.demo_error'))
       setLoading(false)
     } else {
       router.push('/dashboard')
     }
   }
 
+  const langs: { value: Lang; label: string; flag: string }[] = [
+    { value: 'es', label: 'ES', flag: '🇪🇸' },
+    { value: 'en', label: 'EN', flag: '🇬🇧' },
+  ]
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Language selector */}
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-1 shadow-sm">
+            <Globe className="w-3.5 h-3.5 text-gray-400 mx-1" />
+            {langs.map((l) => (
+              <button
+                key={l.value}
+                onClick={() => setLang(l.value)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                  lang === l.value
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <span>{l.flag}</span>
+                <span>{l.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl mb-4">
             <Building2 className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">RentalManager</h1>
-          <p className="text-gray-500 mt-1">Gestión profesional de alquileres</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('app.name')}</h1>
+          <p className="text-gray-500 mt-1">{t('app.tagline')}</p>
           <span className="inline-flex items-center mt-2 px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-400">
             v0.2.1
           </span>
@@ -77,13 +105,13 @@ export default function LoginPage() {
 
         <Card className="shadow-xl border-gray-100">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl">Iniciar sesión</CardTitle>
-            <CardDescription>Accede a tu cuenta para gestionar tus propiedades</CardDescription>
+            <CardTitle className="text-xl">{t('login.title')}</CardTitle>
+            <CardDescription>{t('login.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('login.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -94,7 +122,7 @@ export default function LoginPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password">{t('login.password')}</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -122,7 +150,7 @@ export default function LoginPage() {
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Entrar
+                {t('login.submit')}
               </Button>
             </form>
 
@@ -131,7 +159,7 @@ export default function LoginPage() {
                 <span className="w-full border-t border-gray-200" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-400">O</span>
+                <span className="bg-white px-2 text-gray-400">{t('login.or')}</span>
               </div>
             </div>
 
@@ -143,13 +171,13 @@ export default function LoginPage() {
               disabled={loading}
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Probar con datos de demo
+              {t('login.demo')}
             </Button>
 
             <p className="text-center text-sm text-gray-500 mt-4">
-              ¿No tienes cuenta?{' '}
+              {t('login.no_account')}{' '}
               <Link href="/registro" className="text-blue-600 hover:underline font-medium">
-                Regístrate gratis
+                {t('login.register_link')}
               </Link>
             </p>
           </CardContent>

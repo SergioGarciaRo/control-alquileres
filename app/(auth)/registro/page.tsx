@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useLanguage } from '@/context/language-context'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -32,14 +34,14 @@ export default function RegisterPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Error al registrarse')
+        setError(data.error || t('register.error_default'))
         setLoading(false)
         return
       }
 
       router.push('/login?registered=true')
     } catch {
-      setError('Error de conexión')
+      setError(t('register.error_connection'))
       setLoading(false)
     }
   }
@@ -51,28 +53,28 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl mb-4">
             <Building2 className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">RentalManager</h1>
-          <p className="text-gray-500 mt-1">Empieza a gestionar tus propiedades</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('app.name')}</h1>
+          <p className="text-gray-500 mt-1">{t('register.tagline')}</p>
         </div>
 
         <Card className="shadow-xl border-gray-100">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl">Crear cuenta</CardTitle>
-            <CardDescription>Regístrate gratis y empieza a usar RentalManager</CardDescription>
+            <CardTitle className="text-xl">{t('register.title')}</CardTitle>
+            <CardDescription>{t('register.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre (opcional)</Label>
+                <Label htmlFor="name">{t('register.name')}</Label>
                 <Input
                   id="name"
-                  placeholder="Tu nombre"
+                  placeholder={t('register.name_placeholder')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('register.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -83,11 +85,11 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password">{t('register.password')}</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder={t('register.password_placeholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -103,13 +105,13 @@ export default function RegisterPage() {
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Crear cuenta gratis
+                {t('register.submit')}
               </Button>
 
               <p className="text-center text-sm text-gray-500">
-                ¿Ya tienes cuenta?{' '}
+                {t('register.has_account')}{' '}
                 <Link href="/login" className="text-blue-600 hover:underline font-medium">
-                  Iniciar sesión
+                  {t('register.login_link')}
                 </Link>
               </p>
             </form>

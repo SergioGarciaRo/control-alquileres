@@ -3,29 +3,29 @@
 import { Bell, Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { useLanguage } from '@/context/language-context'
 
-const pageTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/propiedades': 'Propiedades',
-  '/inquilinos': 'Inquilinos',
-  '/pagos': 'Pagos',
-  '/gastos': 'Gastos',
-  '/fianzas': 'Fianzas',
-  '/incidencias': 'Incidencias',
-  '/documentos': 'Documentos',
-  '/historico': 'Histórico',
-  '/rentabilidad': 'Rentabilidad',
-}
-
-interface HeaderProps {
-  onMobileMenuToggle: () => void
-}
-
-export function Header({ onMobileMenuToggle }: HeaderProps) {
+export function Header({ onMobileMenuToggle }: { onMobileMenuToggle: () => void }) {
   const pathname = usePathname()
-  const base = '/' + pathname.split('/')[1]
-  const title = pageTitles[base] || 'RentalManager'
+  const { t } = useLanguage()
   const version = 'v0.2.1'
+
+  const pageTitleKeys: Record<string, Parameters<typeof t>[0]> = {
+    '/dashboard':    'nav.dashboard',
+    '/propiedades':  'nav.properties',
+    '/inquilinos':   'nav.tenants',
+    '/pagos':        'nav.payments',
+    '/gastos':       'nav.expenses',
+    '/fianzas':      'nav.deposits',
+    '/incidencias':  'nav.incidents',
+    '/documentos':   'nav.documents',
+    '/historico':    'nav.history',
+    '/rentabilidad': 'nav.profitability',
+  }
+
+  const base = '/' + pathname.split('/')[1]
+  const titleKey = pageTitleKeys[base]
+  const title = titleKey ? t(titleKey) : 'RentalManager'
 
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-6">
@@ -34,7 +34,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
         <button
           onClick={onMobileMenuToggle}
           className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-          aria-label="Abrir menú"
+          aria-label={t('nav.open')}
         >
           <Menu className="w-5 h-5" />
         </button>

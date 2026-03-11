@@ -9,19 +9,7 @@ import {
   ChevronLeft, ChevronRight, TrendingUp, X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/propiedades', label: 'Propiedades', icon: Building2 },
-  { href: '/inquilinos', label: 'Inquilinos', icon: Users },
-  { href: '/pagos', label: 'Pagos', icon: CreditCard },
-  { href: '/gastos', label: 'Gastos', icon: Receipt },
-  { href: '/fianzas', label: 'Fianzas', icon: Shield },
-  { href: '/incidencias', label: 'Incidencias', icon: AlertTriangle },
-  { href: '/documentos', label: 'Documentos', icon: FileText },
-  { href: '/historico', label: 'Histórico', icon: History },
-  { href: '/rentabilidad', label: 'Rentabilidad', icon: TrendingUp },
-]
+import { useLanguage } from '@/context/language-context'
 
 interface SidebarProps {
   collapsed: boolean
@@ -33,16 +21,27 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const { t } = useLanguage()
+
+  const navItems = [
+    { href: '/dashboard',     labelKey: 'nav.dashboard',     icon: LayoutDashboard },
+    { href: '/propiedades',   labelKey: 'nav.properties',    icon: Building2 },
+    { href: '/inquilinos',    labelKey: 'nav.tenants',       icon: Users },
+    { href: '/pagos',         labelKey: 'nav.payments',      icon: CreditCard },
+    { href: '/gastos',        labelKey: 'nav.expenses',      icon: Receipt },
+    { href: '/fianzas',       labelKey: 'nav.deposits',      icon: Shield },
+    { href: '/incidencias',   labelKey: 'nav.incidents',     icon: AlertTriangle },
+    { href: '/documentos',    labelKey: 'nav.documents',     icon: FileText },
+    { href: '/historico',     labelKey: 'nav.history',       icon: History },
+    { href: '/rentabilidad',  labelKey: 'nav.profitability', icon: TrendingUp },
+  ] as const
 
   return (
     <aside
       className={cn(
         'fixed left-0 top-0 h-full bg-gray-900 text-white flex flex-col transition-all duration-300 z-40',
-        // Mobile: drawer overlay, hidden off-screen by default, shown when mobileOpen
-        // Desktop (lg+): always visible, width depends on collapsed state
         'lg:translate-x-0',
         mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
-        // On mobile always full width (w-60), on desktop depends on collapsed
         collapsed ? 'lg:w-16' : 'lg:w-60',
         'w-60',
       )}
@@ -54,13 +53,13 @@ export function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: Si
         </div>
         <div className={cn('flex-1', collapsed && 'lg:hidden')}>
           <span className="font-bold text-white text-sm">RentalManager</span>
-          <p className="text-xs text-gray-400">Gestión de alquileres</p>
+          <p className="text-xs text-gray-400">{t('nav.subtitle')}</p>
         </div>
         {/* Close button — mobile only */}
         <button
           onClick={onMobileClose}
           className="lg:hidden p-1 rounded text-gray-400 hover:text-white"
-          aria-label="Cerrar menú"
+          aria-label={t('nav.close')}
         >
           <X className="w-5 h-5" />
         </button>
@@ -70,6 +69,7 @@ export function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: Si
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon
+          const label = t(item.labelKey)
           const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
           return (
             <Link
@@ -83,10 +83,10 @@ export function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: Si
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'
               )}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? label : undefined}
             >
               <Icon className="w-5 h-5 shrink-0" />
-              <span className={cn(collapsed && 'lg:hidden')}>{item.label}</span>
+              <span className={cn(collapsed && 'lg:hidden')}>{label}</span>
             </Link>
           )
         })}
@@ -106,10 +106,10 @@ export function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: Si
             'flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-all',
             collapsed ? 'lg:justify-center' : ''
           )}
-          title={collapsed ? 'Cerrar sesión' : undefined}
+          title={collapsed ? t('nav.signout') : undefined}
         >
           <LogOut className="w-5 h-5 shrink-0" />
-          <span className={cn(collapsed && 'lg:hidden')}>Cerrar sesión</span>
+          <span className={cn(collapsed && 'lg:hidden')}>{t('nav.signout')}</span>
         </button>
         {/* Collapse toggle: desktop only */}
         <button
@@ -120,7 +120,7 @@ export function Sidebar({ collapsed, onCollapse, mobileOpen, onMobileClose }: Si
           )}
         >
           {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-          {!collapsed && <span>Colapsar menú</span>}
+          {!collapsed && <span>{t('nav.collapse')}</span>}
         </button>
       </div>
     </aside>
